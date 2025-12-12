@@ -8,7 +8,7 @@ import { storeToRefs } from "pinia";
 const movies = ref<SearchResult[] | []>([])
 const popularMoviesPage = ref<number>(1)
 const popularMoviesTotalPages = ref<number>(0)
-const isLoadingMorePopular = ref<boolean>(false)
+const isLoadingPopular = ref<boolean>(false)
 
 const MovieRating = defineAsyncComponent(() => import("./partials/MovieRating.vue"))
 
@@ -19,33 +19,49 @@ onMounted(async () => {
 })
 
 const store = movieStore();
-const { searchList, searchQuery, isLoadingMore } = storeToRefs(store)
+const { searchList, searchQuery, isLoadingMore, currentSearchPage } = storeToRefs(store)
 
-const canLoadMorePopular = computed(() => 
-  !searchQuery.value && popularMoviesPage.value < popularMoviesTotalPages.value && !isLoadingMorePopular.value
-)
-
-const canLoadMoreSearch = computed(() => 
-  searchQuery.value && searchList.value.page < searchList.value.total_pages && !isLoadingMore.value
-)
-
-async function loadMorePopular() {
-  if (!canLoadMorePopular.value) return;
+// Generate page numbers for pagination
+const popularPageNumbers = computed(() => {
+  const pages = [];
+  const maxPagesToShow = 5;
+  const startPage = Math.max(1, popularMoviesPage.value - 2);
+  const endPage = Math.min(popularMoviesTotalPages.value, startPage + maxPagesToShow - 1);
   
-  isLoadingMorePopular.value = true;
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+  return pages;
+})
+
+const searchPageNumbers = computed(() => {
+  const pages = [];
+  const maxPagesToShow = 5;
+  const startPage = Math.max(1, currentSearchPage.value - 2);
+  const endPage = Math.min(searchList.value.total_pages, startPage + maxPagesToShow - 1);
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+  return pages;
+})
+
+async function goToPopularPage(page: number) {
+  if (page === popularMoviesPage.value || isLoadingPopular.value) return;
+  
+  isLoadingPopular.value = true;
   try {
-    const nextPage = popularMoviesPage.value + 1;
-    const data: SearchResults = await fetchPopularMovies(nextPage);
-    movies.value = [...movies.value, ...data.results];
-    popularMoviesPage.value = nextPage;
+    const data: SearchResults = await fetchPopularMovies(page);
+    movies.value = data.results;
+    popularMoviesPage.value = page;
   } finally {
-    isLoadingMorePopular.value = false;
+    isLoadingPopular.value = false;
   }
 }
 
-async function loadMoreSearch() {
-  if (!canLoadMoreSearch.value) return;
-  await store.loadMoreSearchResults();
+async function goToSearchPage(page: number) {
+  if (page === currentSearchPage.value || !searchQuery.value) return;
+  await store.goToSearchPage(page);
 }
 
 watch(searchList, async (newValue) => {
@@ -85,43 +101,96 @@ watch(searchList, async (newValue) => {
       </div>
     </div>
     
-    <!-- Pagination Controls -->
-    <div class="flex justify-center p-6">
-      <!-- Load More Popular Movies Button -->
-      <button 
-        v-if="canLoadMorePopular"
-        @click="loadMorePopular"
-        :disabled="isLoadingMorePopular"
-        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        <span v-if="isLoadingMorePopular">Loading...</span>
-        <span v-else>Load More Movies</span>
-      </button>
-      
-      <!-- Load More Search Results Button -->
-      <button 
-        v-if="canLoadMoreSearch"
-        @click="loadMoreSearch"
-        :disabled="isLoadingMore"
-        class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        <span v-if="isLoadingMore">Loading...</span>
-        <span v-else>Load More Results</span>
-      </button>
-      
-      <!-- End of Results Message -->
-      <div 
-        v-if="searchQuery && searchList.page >= searchList.total_pages && searchList.total_pages > 0"
-        class="text-gray-500 text-center"
-      >
-        No more search results to load
+    <!-- Page-based Pagination Controls -->
+    <div class="flex justify-center items-center gap-2 p-6">
+      <!-- Popular Movies Pagination -->
+      <div v-if="!searchQuery && popularMoviesTotalPages > 1" class="flex items-center gap-2">
+        <!-- Previous Button -->
+        <button 
+          @click="goToPopularPage(popularMoviesPage - 1)"
+          :disabled="popularMoviesPage <= 1 || isLoadingPopular"
+          class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        
+        <!-- Page Numbers -->
+        <button 
+          v-for="page in popularPageNumbers" 
+          :key="page"
+          @click="goToPopularPage(page)"
+          :disabled="isLoadingPopular"
+          :class="[
+            'px-3 py-2 rounded transition-colors',
+            page === popularMoviesPage 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          ]"
+        >
+          {{ page }}
+        </button>
+        
+        <!-- Next Button -->
+        <button 
+          @click="goToPopularPage(popularMoviesPage + 1)"
+          :disabled="popularMoviesPage >= popularMoviesTotalPages || isLoadingPopular"
+          class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+        
+        <!-- Page Info -->
+        <span class="text-gray-500 ml-4">
+          Page {{ popularMoviesPage }} of {{ popularMoviesTotalPages }}
+        </span>
+        
+        <!-- Loading Indicator -->
+        <span v-if="isLoadingPopular" class="text-blue-600 ml-2">Loading...</span>
       </div>
       
-      <div 
-        v-if="!searchQuery && popularMoviesPage >= popularMoviesTotalPages && popularMoviesTotalPages > 0"
-        class="text-gray-500 text-center"
-      >
-        No more movies to load
+      <!-- Search Results Pagination -->
+      <div v-if="searchQuery && searchList.total_pages > 1" class="flex items-center gap-2">
+        <!-- Previous Button -->
+        <button 
+          @click="goToSearchPage(currentSearchPage - 1)"
+          :disabled="currentSearchPage <= 1 || isLoadingMore"
+          class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        
+        <!-- Page Numbers -->
+        <button 
+          v-for="page in searchPageNumbers" 
+          :key="page"
+          @click="goToSearchPage(page)"
+          :disabled="isLoadingMore"
+          :class="[
+            'px-3 py-2 rounded transition-colors',
+            page === currentSearchPage 
+              ? 'bg-green-600 text-white' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          ]"
+        >
+          {{ page }}
+        </button>
+        
+        <!-- Next Button -->
+        <button 
+          @click="goToSearchPage(currentSearchPage + 1)"
+          :disabled="currentSearchPage >= searchList.total_pages || isLoadingMore"
+          class="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+        
+        <!-- Page Info -->
+        <span class="text-gray-500 ml-4">
+          Page {{ currentSearchPage }} of {{ searchList.total_pages }}
+        </span>
+        
+        <!-- Loading Indicator -->
+        <span v-if="isLoadingMore" class="text-green-600 ml-2">Loading...</span>
       </div>
     </div>
   </div>

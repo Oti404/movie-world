@@ -36,29 +36,24 @@ export const movieStore = defineStore('movieStore', () => {
     
     const data = await searchMovie(query, page);
     
-    if (page === 1) {
-      // Reset search results for new query
-      searchList.value = data;
-    } else {
-      // Append results for pagination
-      searchList.value = {
-        ...data,
-        results: [...searchList.value.results, ...data.results]
-      };
-    }
+    // For page-based navigation, replace results instead of appending
+    searchList.value = data;
     
     return data;
   }
 
-  async function loadMoreSearchResults(): Promise<SearchResults | null> {
-    if (isLoadingMore.value || currentSearchPage.value >= searchList.value.total_pages) {
+  async function goToSearchPage(page: number): Promise<SearchResults | null> {
+    if (isLoadingMore.value || !searchQuery.value) {
+      return null;
+    }
+    
+    if (page < 1 || page > searchList.value.total_pages) {
       return null;
     }
     
     isLoadingMore.value = true;
     try {
-      const nextPage = currentSearchPage.value + 1;
-      const data = await searchMovieList(searchQuery.value, nextPage);
+      const data = await searchMovieList(searchQuery.value, page);
       return data;
     } finally {
       isLoadingMore.value = false;
@@ -80,7 +75,7 @@ export const movieStore = defineStore('movieStore', () => {
     searchQuery,
     currentSearchPage,
     isLoadingMore,
-    loadMoreSearchResults,
+    goToSearchPage,
     resetSearch
   }
 })
