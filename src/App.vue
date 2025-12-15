@@ -8,7 +8,6 @@ import Search from "./components/Search.vue";
       <RouterLink to="/"><h1 class="text-3xl font-bold text-red-600">MovieApp</h1></RouterLink>
       <nav class="flex gap-6">
         <Search></Search>
-        <RouterLink class="hover:underline" to="/upcoming" v-if="false">Upcoming</RouterLink>
         <button class="text-sm bg-red-600 px-4 py-1 rounded hover:bg-red-700">Login</button>
       </nav>
     </header>

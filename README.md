@@ -112,6 +112,46 @@ npm run build
 npm run preview  # Preview production build
 ```
 
+## 🚀 Deployment
+
+### Deploy to Vercel
+
+This project is optimized for Vercel deployment with the included `vercel.json` configuration.
+
+#### Quick Deploy
+
+1. **Connect to Vercel**
+   ```bash
+   # Install Vercel CLI (optional)
+   npm i -g vercel
+   
+   # Deploy from command line
+   vercel
+   ```
+
+2. **GitHub Integration** (Recommended)
+   - Push your code to GitHub
+   - Connect your repository to [Vercel](https://vercel.com)
+   - Automatic deployments on every push
+
+#### Environment Variables
+
+Set these environment variables in your Vercel dashboard:
+
+```bash
+VITE_API_URL=your_tmdb_api_key_here
+VITE_BASE_URL=https://api.themoviedb.org/3
+```
+
+#### Deployment Features
+
+- ✅ **SPA Routing**: Configured for client-side routing
+- ✅ **Asset Optimization**: Static assets cached for 1 year
+- ✅ **Build Optimization**: Vite production build
+- ✅ **Environment Variables**: Secure API key handling
+
+**Live Demo**: [Your Vercel URL will appear here after deployment]
+
 ## 🛠️ Core Technologies & Libraries
 
 ### Frontend Framework

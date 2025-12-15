@@ -1,10 +1,17 @@
 {
-  "name": "hello2",
-  "version": "0.0.0",
+  "name": "movie-app-nov-2025",
+  "version": "1.0.0",
+  "description": "A modern Vue.js movie discovery app with TMDB API integration, featuring search, pagination, and responsive design",
+  "author": "Vlad Priscu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vlad-priscu-globant/movie-app-nov-2025.git"
+  },
+  "keywords": ["vue", "typescript", "movie", "tmdb", "tailwind", "pinia", "vite"],
   "private": true,
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=20.17.0"
   },
   "scripts": {
     "dev": "vite",
