@@ -17,5 +17,10 @@ export default defineNuxtConfig({
 
   supabase: {
     redirect: false
+  },
+
+  // 👇 ADAUGĂ ACEASTĂ PARTE NOUĂ AICI 👇
+  nitro: {
+    preset: 'netlify'
   }
 })
